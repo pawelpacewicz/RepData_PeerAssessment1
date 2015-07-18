@@ -5,7 +5,6 @@ output:
     keep_md: true
 ---
 
-a
 
 ## Loading and preprocessing the data
 
