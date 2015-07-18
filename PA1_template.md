@@ -8,7 +8,7 @@ output:
 
 ## Loading and preprocessing the data
 
-Show any code that is needed to
+Show any code that is needed to:
 
 1. Load the data (i.e. read.csv())
 
@@ -16,19 +16,26 @@ Show any code that is needed to
 ```r
 zipfile="activity.zip"
 datafile="activity.csv"
-data<-read.csv(unz(zipfile,datafile), stringsAsFactors=FALSE)
+
+# unziping with unz() command and defining NA string
+data<-read.csv(unz(zipfile,datafile), stringsAsFactors=FALSE, na.strings="NA")
 ```
 
 2. Process/transform the data (if necessary) into a format suitable for your analysis
 
 ```r
+# keeping $date as strings in $dateSrtring
 data$dateString<-data$date
-data$date<-as.Date(data$date)
-data$timeString<-paste(sprintf("%02d",floor(data$interval/100)),sprintf("%02d",data$interval-floor(data$interval/100)*100),sep=":")
-data$timeString<-as.factor(data$timeString)
-#data$fullDate<-as.POSIXct(paste(data$date,data$timeString))
-```
 
+# changing $date into date format
+data$date<-as.Date(data$date)
+
+# converting $interval into human friendly strings representing time - saving into $timeString. This will be used to build human friendly scales during ploting
+data$timeString<-paste(sprintf("%02d",floor(data$interval/100)),sprintf("%02d",data$interval-floor(data$interval/100)*100),sep=":")
+
+# converting $timeString into factor - required for dyplyr manipulations
+data$timeString<-as.factor(data$timeString)
+```
 
 ## What is mean total number of steps taken per day?
 
@@ -39,6 +46,8 @@ For this part of the assignment, you can ignore the missing values in the datase
 
 ```r
 library(stats)
+
+# using xtabs() for calculation, saving into variable for later usage
 steps_per_day<-xtabs(steps~date, data=data)
 steps_per_day
 ```
@@ -69,6 +78,7 @@ steps_per_day
 
 
 ```r
+# plotting histogram
 hist(steps_per_day)
 ```
 
@@ -81,6 +91,7 @@ hist(steps_per_day)
 mean_steps_per_day<-mean(steps_per_day)
 median_steps_per_day<-median(steps_per_day)
 
+# changin scientific notation parameters to assure proper numbers printing
 options(scipen = 1, digits = 2)
 ```
 mean of the total number of steps taken per day is 10766.19
@@ -95,24 +106,16 @@ median of the total number of steps taken per day is 10765
 
 ```r
 library(dplyr)
-```
 
-```
-## 
-## Attaching package: 'dplyr'
-## 
-## The following object is masked from 'package:stats':
-## 
-##     filter
-## 
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
+# preparing data
+time_serie<-data %>% 
+    select(steps,timeString) %>% # selecting columns
+    group_by(timeString) %>% # grouping
+    summarize(average=mean(steps, na.rm=TRUE)) #summarizing
 
-```r
-time_serie<-data %>% select(steps,timeString) %>% group_by(timeString) %>% summarize(average=mean(steps, na.rm=TRUE))
 library(lattice)
+
+# plotting
 xyplot(average ~ timeString, time_serie, type="l", scales=list(x=list(at=seq(1,12*24,24))))
 ```
 
@@ -122,6 +125,7 @@ xyplot(average ~ timeString, time_serie, type="l", scales=list(x=list(at=seq(1,1
 
 
 ```r
+# it can be calculated using following command
 time_serie[which.max(time_serie$average),]$timeString
 ```
 
@@ -148,8 +152,8 @@ total number of missing values in the dataset is 2304
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-
 Lets check where NA's are located.
+
 1st let's separate all NAs and count them
 
 ```r
@@ -219,16 +223,24 @@ length(unique(NAs$interval))
 ## [1] 288
 ```
 
-Number of unique dates with NAs 8 and unique intervals with NAs 288 shows us that NAs are located only on dates (on all intervals):
-2012-10-01, 2012-10-08, 2012-11-01, 2012-11-04, 2012-11-09, 2012-11-10, 2012-11-14, 2012-11-30
+Number of unique dates with NAs is 8
+Number of unique intervals with NAs is 288.
 
-So my strategy proposal for filling in all of the missing values in the dataset is mean grouped by every 5-minute interval (it's already calculated in time_serie variable).
+It shows us that NAs are located ONLY on 8 dates (on all intervals):
+2012-10-01, 2012-10-08, 2012-11-01, 2012-11-04, 2012-11-09, 2012-11-10, 2012-11-14, 2012-11-30 as:
+
+Number of unique dates with NAs (8) * Number of unique intervals with NAs (288) = 2304.
+
+So NAs are only on 8 dates. So my strategy proposal for filling in all of the missing values (which means all the missing dates) in the dataset is to use all daily means grouped by every 5-minute interval (it's already calculated in time_serie variable). This approach will make low impact on all data.
 
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 
 ```r
+# creating new dataset
 dataNONa<-data
+
+# filling missing data
 dataNONa[is.na(dataNONa$steps),]$steps<-time_serie$average
 ```
 
@@ -236,6 +248,7 @@ dataNONa[is.na(dataNONa$steps),]$steps<-time_serie$average
 
 
 ```r
+# preparing data
 steps_per_day_NONa<-xtabs(steps~date, data=dataNONa)
 steps_per_day_NONa
 ```
@@ -267,12 +280,14 @@ steps_per_day_NONa
 ```
 
 ```r
+# buildign histogram
 hist(steps_per_day_NONa)
 ```
 
 ![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png) 
 
 ```r
+#calculating mean and median
 mean_steps_per_day_NONa<-mean(steps_per_day_NONa)
 median_steps_per_day_NONa<-median(steps_per_day_NONa)
 ```
@@ -290,17 +305,12 @@ For this part the weekdays() function may be of some help here. Use the dataset 
 
 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
+#i prefer not to use weekdays() function as it shows weekdays names in local language. So using this as solution on computer with different Locale could generate errors. Instead I'm using isWeekday() from "timeDate" package 
 
 ```r
-#i prefer not to use weekdays() function as it shows weekdays names in local language. So using this as solution on computer with different Locale could generate errors. Instead of tht I'm using isWeekday() from "timeDate" package 
 library(timeDate)
-```
 
-```
-## Warning: package 'timeDate' was built under R version 3.2.1
-```
-
-```r
+# create new variable
 dataNONa$wDay<-factor(isWeekday(data$date), labels=c("weekend","weekday"))
 ```
 
@@ -308,8 +318,13 @@ dataNONa$wDay<-factor(isWeekday(data$date), labels=c("weekend","weekday"))
 
 
 ```r
-time_serie_wD<-dataNONa %>% select(steps,timeString,wDay) %>% group_by(wDay, timeString) %>% summarize(average=mean(steps, na.rm=TRUE))
+# preparing data
+time_serie_wD<-dataNONa %>% 
+    select(steps,timeString,wDay) %>% # selecting colums
+    group_by(wDay, timeString) %>% # grouping
+    summarize(average=mean(steps, na.rm=TRUE)) # summarizing
 
+# plotting
 xyplot(average ~ timeString|wDay, time_serie_wD, type="l", scales=list(x=list(at=seq(1,12*24,24))), layout=c(1,2))
 ```
 

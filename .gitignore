@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+# This file
+.gitignore
+
 #Data files
 .RData
 
