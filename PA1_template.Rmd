@@ -190,7 +190,7 @@ For this part the weekdays() function may be of some help here. Use the dataset 
 
 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
-#i prefer not to use weekdays() function as it shows weekdays names in local language. So using this as solution on computer with different Locale could generate errors. Instead I'm using isWeekday() from "timeDate" package 
+I prefer not to use weekdays() function as it shows weekdays names in local language. So using this as solution on computer with different Locale could generate errors. Instead I'm using isWeekday() from "timeDate" package 
 ```{r echo=TRUE}
 library(timeDate)
 
