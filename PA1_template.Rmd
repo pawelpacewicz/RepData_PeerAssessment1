@@ -12,16 +12,19 @@ Show any code that is needed to
 
 1. Load the data (i.e. read.csv())
 
-```{r}
+```{r echo=TRUE}
 zipfile="activity.zip"
 datafile="activity.csv"
 data<-read.csv(unz(zipfile,datafile), stringsAsFactors=FALSE)
-data$date<-as.Date(data$date)
 ```
 
 2. Process/transform the data (if necessary) into a format suitable for your analysis
-```{r}
+```{r echo=TRUE}
+data$dateString<-data$date
 data$date<-as.Date(data$date)
+data$timeString<-paste(sprintf("%02d",floor(data$interval/100)),sprintf("%02d",data$interval-floor(data$interval/100)*100),sep=":")
+data$timeString<-as.factor(data$timeString)
+#data$fullDate<-as.POSIXct(paste(data$date,data$timeString))
 ```
 
 
@@ -31,7 +34,7 @@ For this part of the assignment, you can ignore the missing values in the datase
 
 1. Calculate the total number of steps taken per day
 
-```{r}
+```{r echo=TRUE}
 library(stats)
 steps_per_day<-xtabs(steps~date, data=data)
 steps_per_day
@@ -39,7 +42,7 @@ steps_per_day
 
 2. If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
 
-```{r}
+```{r echo=TRUE}
 hist(steps_per_day)
 ```
 
@@ -61,21 +64,21 @@ median of the total number of steps taken per day is `r median_steps_per_day`
 
 1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
-```{r}
+```{r echo=TRUE}
 library(dplyr)
-time_serie<-data %>% group_by(interval) %>% summarize(average=mean(steps, na.rm=TRUE))
+time_serie<-data %>% select(steps,timeString) %>% group_by(timeString) %>% summarize(average=mean(steps, na.rm=TRUE))
 library(lattice)
-xyplot(average ~ interval, time_serie)
+xyplot(average ~ timeString, time_serie, type="l", scales=list(x=list(at=seq(1,12*24,24))))
 ```
 
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
-```{r}
-time_serie[which.max(time_serie$average),]$interval
+```{r echo=TRUE}
+time_serie[which.max(time_serie$average),]$timeString
 
 ```
 
-on average across all the days interval `r time_serie[which.max(time_serie$average),]$interval`, contains the maximum number of steps
+on average across all the days interval `r time_serie[which.max(time_serie$average),]$timeString`, contains the maximum number of steps
 
 
 ## Imputing missing values
@@ -84,27 +87,66 @@ Note that there are a number of days/intervals where there are missing values (c
 
 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
-```{r}
-
+```{r echo=TRUE}
+total_number_NA<-sum(is.na(data))
 ```
+
+total number of missing values in the dataset is `r total_number_NA`
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-```{r}
+
+Lets check where NA's are located.
+1st let's separate all NAs and count them
+```{r echo=TRUE}
+NAs<-data[is.na(data$steps),]
+nrow(NAs)
+```
+
+then let's check on which dates NA's are located and how many there are unique dates with NAs 
+```{r echo=TRUE}
+unique(NAs$date)
+length(unique(NAs$date))
 
 ```
 
+then let's check on which intervals NA's are located and how many there are unique intervals with NAs 
+
+```{r echo=TRUE}
+unique(NAs$interval)
+length(unique(NAs$interval))
+
+```
+
+Number of unique dates with NAs `r length(unique(NAs$date))` and unique intervals with NAs `r length(unique(NAs$interval))` shows us that NAs are located only on dates (on all intervals):
+`r unique(NAs$date)`
+
+So my strategy proposal for filling in all of the missing values in the dataset is mean grouped by every 5-minute interval (it's already calculated in time_serie variable).
+
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
-```{r}
-
+```{r echo=TRUE}
+dataNONa<-data
+dataNONa[is.na(dataNONa$steps),]$steps<-time_serie$average
 ```
 
 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-```{r}
+```{r echo=TRUE}
+steps_per_day_NONa<-xtabs(steps~date, data=dataNONa)
+steps_per_day_NONa
+hist(steps_per_day_NONa)
+
+mean_steps_per_day_NONa<-mean(steps_per_day_NONa)
+median_steps_per_day_NONa<-median(steps_per_day_NONa)
 
 ```
+
+mean of the total number of steps taken per day is `r mean_steps_per_day_NONa` (in the 1st part of assignment it was: `r mean_steps_per_day`)
+
+median of the total number of steps taken per day is `r median_steps_per_day_NONa` (in the 1st part of assignment it was: `r median_steps_per_day`)
+
+So we can see that impact is very low
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -113,14 +155,20 @@ For this part the weekdays() function may be of some help here. Use the dataset 
 
 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
-```{r}
+```{r echo=TRUE}
+#i prefer not to use weekdays() function as it shows weekdays names in local language. So using this as solution on computer with different Locale could generate errors. Instead of tht I'm using isWeekday() from "timeDate" package 
+library(timeDate)
+
+dataNONa$wDay<-factor(isWeekday(data$date), labels=c("weekend","weekday"))
 
 ```
 
 2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
 
-```{r}
-#getOption("scipen")
-#getOption("digits")
+```{r echo=TRUE}
+
+time_serie_wD<-dataNONa %>% select(steps,timeString,wDay) %>% group_by(wDay, timeString) %>% summarize(average=mean(steps, na.rm=TRUE))
+
+xyplot(average ~ timeString|wDay, time_serie_wD, type="l", scales=list(x=list(at=seq(1,12*24,24))), layout=c(1,2))
 
 ```
