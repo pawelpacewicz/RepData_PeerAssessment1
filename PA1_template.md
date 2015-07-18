@@ -1,4 +1,9 @@
-# Reproducible Research: Peer Assessment 1
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
 
 
 ## Loading and preprocessing the data
@@ -67,7 +72,7 @@ steps_per_day
 hist(steps_per_day)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png) 
 
 3. Calculate and report the mean and median of the total number of steps taken per day
 
@@ -111,7 +116,7 @@ library(lattice)
 xyplot(average ~ timeString, time_serie, type="l", scales=list(x=list(at=seq(1,12*24,24))))
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png) 
 
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
@@ -265,7 +270,7 @@ steps_per_day_NONa
 hist(steps_per_day_NONa)
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-13-1.png) 
+![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png) 
 
 ```r
 mean_steps_per_day_NONa<-mean(steps_per_day_NONa)
@@ -283,7 +288,7 @@ So we can see that impact is very low
 
 For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
 
-1. Create a new factor variable in the dataset with two levels â€“ â€œweekdayâ€ and â€œweekendâ€ indicating whether a given date is a weekday or weekend day.
+1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
 
 ```r
@@ -308,4 +313,4 @@ time_serie_wD<-dataNONa %>% select(steps,timeString,wDay) %>% group_by(wDay, tim
 xyplot(average ~ timeString|wDay, time_serie_wD, type="l", scales=list(x=list(at=seq(1,12*24,24))), layout=c(1,2))
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-15-1.png) 
+![plot of chunk unnamed-chunk-15](figure/unnamed-chunk-15-1.png) 
